@@ -1,0 +1,110 @@
+# Makefile для автоматизації команд проекту
+
+.PHONY: help install run test clean docker-build docker-up docker-down seed lint format
+
+# Змінні
+PROJECT_NAME := contacts-api
+PYTHON := python
+POETRY := poetry
+
+# Допомога
+help:
+	@echo "Доступні команди:"
+	@echo "  install     - Встановити залежності"
+	@echo "  run         - Запустити додаток локально"
+	@echo "  test        - Запустити тести"
+	@echo "  seed        - Створити тестові дані"
+	@echo "  lint        - Перевірити код linting"
+	@echo "  format      - Форматувати код"
+	@echo "  clean       - Очистити тимчасові файли"
+	@echo "  docker-build- Побудувати Docker образ"
+	@echo "  docker-up   - Запустити через Docker Compose"
+	@echo "  docker-down - Зупинити Docker сервіси"
+	@echo "  migration   - Створити нову міграцію"
+	@echo "  migrate     - Застосувати міграції"
+
+# Встановлення залежностей
+install:
+	$(POETRY) install
+
+# Запуск локально
+run:
+	$(POETRY) run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Тестування
+test:
+	$(POETRY) run pytest -v
+
+test-cov:
+	$(POETRY) run pytest --cov=app --cov-report=html
+
+# Створення тестових даних
+seed:
+	$(POETRY) run python scripts/seed_data.py
+
+# Linting та форматування
+lint:
+	$(POETRY) run flake8 app tests
+	$(POETRY) run mypy app
+
+format:
+	$(POETRY) run black app tests scripts
+	$(POETRY) run isort app tests scripts
+
+# Очищення
+clean:
+	find . -type d -name "__pycache__" -delete
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.pyo" -delete
+	find . -type d -name "*.egg-info" -exec rm -rf {} +
+	rm -rf .pytest_cache
+	rm -rf htmlcov
+	rm -rf .coverage
+
+# Docker команди
+docker-build:
+	docker build -t $(PROJECT_NAME) .
+
+docker-up:
+	docker-compose up -d
+
+docker-down:
+	docker-compose down
+
+docker-logs:
+	docker-compose logs -f web
+
+# Міграції
+migration:
+	$(POETRY) run alembic revision --autogenerate -m "$(MSG)"
+
+migrate:
+	$(POETRY) run alembic upgrade head
+
+migrate-down:
+	$(POETRY) run alembic downgrade -1
+
+# Повна настройка проекту
+setup: install
+	cp .env.example .env
+	@echo "Налаштуйте .env файл та запустіть 'make docker-up'"
+
+# Розробка
+dev: docker-up seed
+	@echo "Середовище розробки готове!"
+	@echo "API: http://localhost:8000"
+	@echo "Docs: http://localhost:8000/docs"
+	@echo "Adminer: http://localhost:8080"
+
+# Продакшн збірка
+prod-build:
+	docker build -f Dockerfile.prod -t $(PROJECT_NAME):prod .
+
+# Бекап бази даних
+backup:
+	docker-compose exec db pg_dump -U postgres contacts_db > backup_$(shell date +%Y%m%d_%H%M%S).sql
+
+# Відновлення з бекапу
+restore:
+	@read -p "Введіть ім'я файлу бекапу: " backup_file; \
+	docker-compose exec -T db psql -U postgres contacts_db < $$backup_file
