@@ -34,7 +34,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from app.database import Base
-from app.models import Contact  # Імпортуємо всі моделі
+from app.models import Contact, User, EmailVerification  # Імпортуємо всі моделі
 
 target_metadata = Base.metadata
 
