@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # URL підключення до бази даних
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/contacts_db")
+# За замовчуванням використовується локальна SQLite база. Для підключення до
+# PostgreSQL або іншої СУБД необхідно перевизначити змінну середовища
+# `DATABASE_URL` у файлі `.env`.
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./contacts.db")
 
 # Створення engine для підключення до БД
 engine = create_engine(DATABASE_URL)

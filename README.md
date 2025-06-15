@@ -207,7 +207,9 @@ curl -X DELETE "http://localhost:8000/api/v1/contacts/1"
 
 ```env
 # База даних
-DATABASE_URL=postgresql://postgres:password@localhost:5432/contacts_db
+# За замовчуванням використовується локальна SQLite база.
+# Щоб підключити PostgreSQL або іншу СУБД, змініть значення `DATABASE_URL`.
+DATABASE_URL=sqlite:///./contacts.db
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 POSTGRES_DB=contacts_db
